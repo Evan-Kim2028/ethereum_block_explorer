@@ -5,13 +5,9 @@ __all__ = ['get_txs_blocks_mempool',
            'filter_from_address', 'filter_to_address']
 
 # %% ../00_core.ipynb 2
-import datetime
 import jupyter_black
-import pandas as pd
 import polars as pl
 
-import matplotlib.pyplot as plt
-import matplotlib.ticker as mtick
 
 pl.Config.set_fmt_str_lengths(200)
 pl.Config.set_fmt_float("full")
