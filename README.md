@@ -10,12 +10,10 @@ documentation.
 Make a virtual environment `python -m venv .venv` and then use
 `pip install -e .`
 
-## How to use (WIP)
+## Cryo Command
 
-Fill me in please! Don’t forget code examples:
+`cryo blocks_and_transactions -b 18753440:latest --rpc "https://eth.merkle.io" --subdirs datatype --hex --exclude-columns input`
 
-``` python
-1+1
-```
+## Mempool Dumpster
 
-    2
+`mempool-dumpster get 2023-12-15`
