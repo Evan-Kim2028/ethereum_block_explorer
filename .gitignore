@@ -153,4 +153,4 @@ checklink/cookies.txt
 data*/
 transactions*/
 blocks*/
-01_dropped_sequencer_txs.ipynb
+02_dropped_sequencer_txs.ipynb
