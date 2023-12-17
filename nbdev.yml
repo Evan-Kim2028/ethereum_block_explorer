@@ -1,0 +1,9 @@
+project:
+  output-dir: _docs
+
+website:
+  title: "ethereum_block_explorer"
+  site-url: "https://Evan-Kim2028s.github.io/ethereum_block_explorer/"
+  description: "ethereum block explorer with cryo backend and jupyter notebooks"
+  repo-branch: master
+  repo-url: "https://github.com/Evan-Kim2028/ethereum_block_explorer"
