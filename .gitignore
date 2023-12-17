@@ -149,3 +149,8 @@ checklink/cookies.txt
 
 # Quarto
 .quarto
+.venv*/
+data*/
+transactions*/
+blocks*/
+01_dropped_sequencer_txs.ipynb
