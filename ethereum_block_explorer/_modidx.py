@@ -5,5 +5,11 @@ d = { 'settings': { 'branch': 'master',
                 'doc_host': 'https://Evan-Kim2028s.github.io',
                 'git_url': 'https://github.com/Evan-Kim2028/ethereum_block_explorer',
                 'lib_path': 'ethereum_block_explorer'},
-  'syms': { 'ethereum_block_explorer.core': { 'ethereum_block_explorer.core.get_txs_blocks_mempool': ( 'core.html#get_txs_blocks_mempool',
-                                                                                                       'ethereum_block_explorer/core.py')}}}
+  'syms': { 'ethereum_block_explorer.cryo_query': { 'ethereum_block_explorer.cryo_query.cryoQuery': ( 'cryo_query.html#cryoquery',
+                                                                                                      'ethereum_block_explorer/cryo_query.py'),
+                                                    'ethereum_block_explorer.cryo_query.cryoQuery.create_data_filepaths': ( 'cryo_query.html#cryoquery.create_data_filepaths',
+                                                                                                                            'ethereum_block_explorer/cryo_query.py'),
+                                                    'ethereum_block_explorer.cryo_query.cryoQuery.query_blocks_txs': ( 'cryo_query.html#cryoquery.query_blocks_txs',
+                                                                                                                       'ethereum_block_explorer/cryo_query.py')},
+            'ethereum_block_explorer.polars_transforms': { 'ethereum_block_explorer.polars_transforms.get_txs_blocks_mempool': ( 'polars_transforms.html#get_txs_blocks_mempool',
+                                                                                                                                 'ethereum_block_explorer/polars_transforms.py')}}}
