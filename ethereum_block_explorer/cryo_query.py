@@ -38,6 +38,7 @@ class cryoQuery:
         self,
         n_error_threshold: int = 1,
         retry_threshold: int = 5,
+        block_range: list[str] = ["latest"],
     ):
         """
         Fetches swap data from Uniswap V2 between specified block ranges.
@@ -60,12 +61,14 @@ class cryoQuery:
             if n_error_threshold < n_errored:
                 output: dict[str] = cryo.freeze(
                     "blocks_and_transactions",
-                    blocks=["latest"],
+                    blocks=block_range,  # Internal note - 18753440 is roughly when the ordinal spam started
                     hex=True,
                     rpc="https://eth.merkle.io",
-                    no_verbose=True,
+                    no_verbose=True,  # this doesn't seem to have any effect
                     output_dir="data/raw",
                     subdirs=["datatype"],
+                    # exclude_columns=["input"],
+                    compression=["lz4"],
                 )
 
                 n_errored = output["n_errored"]
