@@ -25,6 +25,11 @@ def get_txs_blocks_mempool(
     If mempool data is provided, it is joined with the transactions and blocks data.
     If not, only transactions and blocks are joined.
 
+    Preprocessing:
+    - add calldata size
+    - add block percentile and ticks
+
+
     Parameters:
     - txs (pl.LazyFrame): LazyFrame containing transaction data.
     - blocks (pl.LazyFrame): LazyFrame containing block data.
@@ -34,6 +39,45 @@ def get_txs_blocks_mempool(
     Returns:
     - pl.LazyFrame: A unified LazyFrame with enriched transaction data.
     """
+
+    # calculate calldata size
+    txs_calldata: pl.LazyFrame = (
+        pl.scan_parquet("data/raw/transactions/*.parquet")
+        .select(
+            "block_number",
+            "transaction_hash",
+            "input",
+        )
+        .with_columns([pl.col("input").str.len_bytes().alias("calldata_size")])
+        .with_columns(pl.col("calldata_size") - 1)
+        .select("transaction_hash", "block_number", "calldata_size")
+    ).with_columns(
+        pl.col("calldata_size")
+        .sum()
+        .over(pl.col("block_number"))
+        .alias("total_calldata_block_size")
+    )
+
+    # cryo txs
+    txs: pl.LazyFrame = (
+        pl.scan_parquet("data/raw/transactions/*.parquet")
+        .select(
+            "block_number",
+            "transaction_index",
+            "transaction_hash",
+            "from_address",
+            "gas_used",
+            "gas_price",
+            "max_priority_fee_per_gas",
+            "max_fee_per_gas",
+        )
+        .join(
+            txs_calldata,
+            on="transaction_hash",
+            how="left",
+        )
+    )
+
     # Use pattern matching to handle the presence or absence of mempool data
     match mempool:
         case _ if isinstance(mempool, pl.LazyFrame):
@@ -49,7 +93,6 @@ def get_txs_blocks_mempool(
             )
 
         case None:
-            print("None Type Expected")
             # Join only transactions with blocks if mempool is not provided
             combined_df = txs.join(
                 blocks, on="block_number", how="left", suffix="_block"
@@ -87,6 +130,17 @@ def get_txs_blocks_mempool(
             (pl.col("blockspace_percentile").round()).alias(
                 "rounded_blockspace_percentile"
             )
+        )
+        # unit conversions
+        .with_columns(
+            # convert gas to gwei
+            (pl.col("gas_price") / 10**9),
+            (pl.col("max_priority_fee_per_gas") / 10**9),
+            (pl.col("max_fee_per_gas") / 10**9),
+            (pl.col("base_fee_per_gas") / 10**9),
+            # convert bytes to kilobytes
+            (pl.col("calldata_size") / 10**3),
+            (pl.col("total_calldata_block_size") / 10**3),
         )
         .fill_nan(0)  # Fill NaN values with 0
         .unique()  # Ensure all rows are unique
