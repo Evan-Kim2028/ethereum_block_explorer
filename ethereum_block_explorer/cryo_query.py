@@ -16,19 +16,17 @@ pl.Config.set_fmt_float("full")
 jupyter_black.load()
 
 # %% ../ethereum_block_explorer_nbs/cryo_query.ipynb 4
-
-
 @dataclass
 class cryoQuery:
-    streaming: bool = True
+    """
+    `cryoQuery` is used to query data from cryo
+    """
+
     raw_data_path: str = "data/raw"
 
     def _create_data_filepaths(self):
         """
-        Creates folders for storing raw and combined data if they do not already exist.
-        This function checks for the presence of 'data/raw'.
-        If these directories do not exist, they are created. If they already exist,
-        a message indicating their existence is printed.
+        Creates folders for storing raw data from cryo.
         """
         if not os.path.exists(self.raw_data_path):
             os.makedirs(self.raw_data_path)
@@ -82,8 +80,15 @@ class cryoQuery:
 # | export
 @dataclass
 class cryoTransform:
-    def process_txs_blocks(
-        txs: pl.LazyFrame, blocks: pl.LazyFrame, mempool: pl.LazyFrame | None = None
+    """
+    cryoTransform extends the underlying transactions and blocks dataset with extra columns.
+    """
+
+    def extend_txs_blocks(
+        self,
+        txs: pl.LazyFrame,
+        blocks: pl.LazyFrame,
+        mempool: pl.LazyFrame | None = None,
     ) -> pl.LazyFrame:
         """
         Combines transaction, block, and optionally flashbots mempool data into a single LazyFrame.
@@ -94,12 +99,13 @@ class cryoTransform:
 
         Preprocessing:
         - add block percentile and ticks
+        - convert gas to gwei
+        - convert bytes to kilobytes
 
 
         Parameters:
         - txs (pl.LazyFrame): LazyFrame containing transaction data.
         - blocks (pl.LazyFrame): LazyFrame containing block data.
-        - address (str): Address used to filter the data (not currently used).
         - mempool (pl.LazyFrame, optional): LazyFrame containing mempool data. Default is None.
 
         Returns:
@@ -126,9 +132,17 @@ class cryoTransform:
                     blocks, on="block_number", how="left", suffix="_block"
                 )
 
-        # Common processing steps for both scenarios
+        agg_df: pl.LazyFrame = combined_df.group_by("block_number").agg(
+            [
+                pl.col("transaction_index").max().alias("transaction_index_max"),
+                pl.col("n_rlp_bytes").sum().alias("block_encoded_bytes"),
+                pl.col("n_input_bytes").sum().alias("block_calldata_bytes"),
+            ]
+        )
+
         return (
-            combined_df.with_columns(
+            combined_df.join(agg_df, on="block_number", how="left")
+            .with_columns(
                 [
                     # Calculate the transaction gas cost
                     (pl.col("gas_used") * pl.col("gas_price") / 10**18).alias(
@@ -136,11 +150,6 @@ class cryoTransform:
                     ),
                     # Convert epoch timestamp to datetime
                     pl.from_epoch("timestamp").alias("block_datetime"),
-                    # Calculate the max transaction index per block
-                    pl.col("transaction_index")
-                    .max()
-                    .over(pl.col("block_number"))
-                    .name.suffix("_max"),
                     # Calculate the gas price premium over the base fee per gas
                     (pl.col("gas_price") / pl.col("base_fee_per_gas")).alias(
                         "block_gas_premium"
@@ -150,8 +159,7 @@ class cryoTransform:
             .with_columns(
                 # Calculate the transaction index percentile within its block
                 (
-                    pl.col("transaction_index") / \
-                    pl.col("transaction_index_max") * 100
+                    pl.col("transaction_index") / pl.col("transaction_index_max") * 100
                 ).alias("blockspace_percentile")
             )
             .with_columns(
@@ -160,25 +168,28 @@ class cryoTransform:
                     "rounded_blockspace_percentile"
                 )
             )
-            .with_columns(
-                # calculate total bytes in block
-                pl.col("n_rlp_bytes")
-                .sum()
-                .over(pl.col("block_number"))
-                .alias("total_encoded_bytes"),
-                # calculate total bytes from calldata in block
-                pl.col("n_rlp_bytes")
-                .sum()
-                .over(pl.col("block_number"))
-                .alias("total_calldata_bytes"),
-            )
             # unit conversions
             .with_columns(
                 # convert gas to gwei
-                (pl.col("gas_price") / 10**9),
-                (pl.col("max_priority_fee_per_gas") / 10**9),
-                (pl.col("max_fee_per_gas") / 10**9),
-                (pl.col("base_fee_per_gas") / 10**9),
+                (pl.col("gas_price") / 10**9).alias("gas_price_gwei"),
+                (pl.col("max_priority_fee_per_gas") / 10**9).alias(
+                    "max_priority_fee_per_gas_gwei"
+                ),
+                (pl.col("max_fee_per_gas") / 10**9).alias("max_fee_per_gas_gwei"),
+                (pl.col("base_fee_per_gas") / 10**9).alias("base_fee_per_gas_gwei"),
+                # convert bytes to kilobytes
+                (pl.col("block_encoded_bytes") / 10**3).alias("block_encoded_kbytes"),
+                (pl.col("block_calldata_bytes") / 10**3).alias(
+                    "block_calldata_kbytes"
+                ),
+            )
+            .drop(
+                "gas_price",
+                "max_priority_fee_per_gas",
+                "max_fee_per_gas",
+                "base_fee_per_gas",
+                "block_encoded_bytes",
+                "block_calldata_bytes",
             )
             .fill_nan(0)  # Fill NaN values with 0
             .unique()  # Ensure all rows are unique

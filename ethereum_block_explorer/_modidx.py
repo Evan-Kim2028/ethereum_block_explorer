@@ -13,7 +13,5 @@ d = { 'settings': { 'branch': 'master',
                                                                                                                        'ethereum_block_explorer/cryo_query.py'),
                                                     'ethereum_block_explorer.cryo_query.cryoTransform': ( 'cryo_query.html#cryotransform',
                                                                                                           'ethereum_block_explorer/cryo_query.py'),
-                                                    'ethereum_block_explorer.cryo_query.cryoTransform.process_txs_blocks': ( 'cryo_query.html#cryotransform.process_txs_blocks',
-                                                                                                                             'ethereum_block_explorer/cryo_query.py')},
-            'ethereum_block_explorer.polars_transforms': { 'ethereum_block_explorer.polars_transforms.get_txs_blocks_mempool': ( 'polars_transforms.html#get_txs_blocks_mempool',
-                                                                                                                                 'ethereum_block_explorer/polars_transforms.py')}}}
+                                                    'ethereum_block_explorer.cryo_query.cryoTransform.extend_txs_blocks': ( 'cryo_query.html#cryotransform.extend_txs_blocks',
+                                                                                                                            'ethereum_block_explorer/cryo_query.py')}}}
