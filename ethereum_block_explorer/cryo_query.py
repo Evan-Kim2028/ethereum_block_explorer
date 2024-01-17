@@ -23,6 +23,7 @@ class cryoQuery:
     """
 
     raw_data_path: str = "data/raw"
+    rpc: str = "https://eth.merkle.io"
 
     def _create_data_filepaths(self):
         """
@@ -60,7 +61,7 @@ class cryoQuery:
                     "blocks_and_transactions",
                     blocks=block_range,
                     hex=True,
-                    rpc="https://eth.merkle.io",
+                    rpc=self.rpc,
                     no_verbose=False,  # this doesn't seem to have any effect
                     output_dir="data/raw",
                     subdirs=["datatype"],
