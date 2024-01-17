@@ -65,7 +65,7 @@ class cryoQuery:
                     output_dir="data/raw",
                     subdirs=["datatype"],
                     include_columns=["n_rlp_bytes"],
-                    exclude_columns=["input", "value"],
+                    # exclude_columns=["input", "value"],
                     # compression=["zstd"],
                     compression=["lz4"],  # bug, can't use zstd in cryo 0.3.0
                 )
