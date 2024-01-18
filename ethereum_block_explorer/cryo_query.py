@@ -7,6 +7,7 @@ __all__ = ['cryoQuery', 'cryoTransform']
 import jupyter_black
 import os
 import polars as pl
+import re
 import cryo
 
 from dataclasses import dataclass
@@ -195,3 +196,47 @@ class cryoTransform:
             .fill_nan(0)  # Fill NaN values with 0
             .unique()  # Ensure all rows are unique
         )
+
+    # 1. read the files in the raw data from block number partitions, sync them together, perform a transformation, and then save into a new folder.
+    def read_filenames(self, directory) -> list:
+        try:
+            return sorted(
+                [
+                    f
+                    for f in os.listdir(directory)
+                    if os.path.isfile(os.path.join(directory, f))
+                ]
+            )
+        except FileNotFoundError:
+            return []
+
+    def extract_block_batch_index(self, filename) -> list[tuple]:
+        match = re.search(r"to_(\d+)", filename)
+        return int(match.group(1)) if match else None
+
+    def sync_filenames(self, directory_a: str, directory_b: str):
+        # Read filenames from both directories
+        transactions_filenames = self.read_filenames(directory_a)
+        blocks_filenames = self.read_filenames(directory_b)
+
+        # Extract numbers and create mappings
+        transactions_mapping = {
+            self.extract_block_batch_index(name): name
+            for name in transactions_filenames
+        }
+        blocks_mapping = {
+            self.extract_block_batch_index(name): name for name in blocks_filenames
+        }
+
+        # Find common keys
+        common_keys = set(transactions_mapping.keys()).intersection(
+            blocks_mapping.keys()
+        )
+
+        # Creating synced files dictionary
+        synced_files = {
+            directory_a: [transactions_mapping[key] for key in common_keys],
+            directory_b: [blocks_mapping[key] for key in common_keys],
+        }
+
+        return synced_files
