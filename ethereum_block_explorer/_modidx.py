@@ -14,4 +14,10 @@ d = { 'settings': { 'branch': 'master',
                                                     'ethereum_block_explorer.cryo_query.cryoTransform': ( 'cryo_query.html#cryotransform',
                                                                                                           'ethereum_block_explorer/cryo_query.py'),
                                                     'ethereum_block_explorer.cryo_query.cryoTransform.extend_txs_blocks': ( 'cryo_query.html#cryotransform.extend_txs_blocks',
-                                                                                                                            'ethereum_block_explorer/cryo_query.py')}}}
+                                                                                                                            'ethereum_block_explorer/cryo_query.py'),
+                                                    'ethereum_block_explorer.cryo_query.cryoTransform.extract_block_batch_index': ( 'cryo_query.html#cryotransform.extract_block_batch_index',
+                                                                                                                                    'ethereum_block_explorer/cryo_query.py'),
+                                                    'ethereum_block_explorer.cryo_query.cryoTransform.read_filenames': ( 'cryo_query.html#cryotransform.read_filenames',
+                                                                                                                         'ethereum_block_explorer/cryo_query.py'),
+                                                    'ethereum_block_explorer.cryo_query.cryoTransform.sync_filenames': ( 'cryo_query.html#cryotransform.sync_filenames',
+                                                                                                                         'ethereum_block_explorer/cryo_query.py')}}}
