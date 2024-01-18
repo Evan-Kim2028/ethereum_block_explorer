@@ -6,7 +6,7 @@ import os
 import polars as pl
 import jupyter_black
 
-pl.Config.set_streaming_chunk_size(50000)
+pl.Config.set_streaming_chunk_size(25000)
 jupyter_black.load()
 
 
