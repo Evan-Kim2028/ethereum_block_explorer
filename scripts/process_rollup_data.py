@@ -1,17 +1,24 @@
-
-# | export
 from ethereum_block_explorer.cryo_query import cryoTransform
 
 import os
 import polars as pl
+import re
 import jupyter_black
 
-pl.Config.set_streaming_chunk_size(25000)
+pl.Config.set_fmt_str_lengths(200)
+pl.Config.set_fmt_float("full")
 jupyter_black.load()
 
 
-# SEQUENCER DATA IN TRANSACTIONS
-cryo_transform = cryoTransform()
+ct = cryoTransform()
+
+
+directory_a: str = "data/raw/transactions"
+directory_b: str = "data/raw/blocks"
+
+synced_files: dict[str] = ct.sync_filenames(
+    directory_a=directory_a, directory_b=directory_b)
+
 
 # Sequencer Tags
 # https://dune.com/queries/3302607
@@ -40,47 +47,51 @@ sequencers_l2: dict[str] = {
 
 sequencer_labels_lf: pl.LazyFrame = pl.from_dict(sequencers_l2).lazy()
 
-# txs
-txs_lf = pl.scan_parquet("data/raw/transactions/*.parquet")
+# Check if the lists have the same length
+if len(synced_files[directory_a]) == len(synced_files[directory_b]):
+    # Assuming both lists in synced_files have the same length
+    for i in range(len(synced_files[directory_a])):
+        # load LazyFrames
+        txs_file: str = directory_a + "/" + synced_files[directory_a][i]
+        blocks_file: str = directory_b + "/" + synced_files[directory_b][i]
 
-# blocks
-blocks_lf = pl.scan_parquet("data/raw/blocks/*.parquet").select(
-    "author", "block_number", "timestamp", "gas_used", "base_fee_per_gas"
-).sort(by="block_number")
+        txs_lf: pl.LazyFrame = pl.scan_parquet(txs_file)
+        blocks_lf: pl.LazyFrame = pl.scan_parquet(blocks_file)
+
+        # combine and save
+        tx_blocks_lf: pl.LazyFrame = (
+            ct.extend_txs_blocks(txs_lf, blocks_lf)
+            .join(
+                sequencer_labels_lf,
+                left_on="from_address",
+                right_on="sequencer_addresses",
+                how="left",
+            )
+            .drop("timestamp", "block_number_right")
+            .filter(pl.col("sequencer_names").is_in(sequencers_l2["sequencer_names"]))
+        )
+
+        # make a new directory to save the files
+        new_directory = "data/rollups"
+        if not os.path.exists(new_directory):
+            os.makedirs(new_directory)
+
+        # get block chunk identifier
+        block_range_match = re.search(r"__(\d+_to_\d+)", txs_file)
+
+        if block_range_match:
+            block_range = block_range_match.group(1)
+            new_filename = f"{block_range}.parquet"
+
+            full_path = os.path.join(new_directory, new_filename)
+
+            # Check if a file with this block range already exists
+            if not os.path.exists(full_path):
+                # Write the Parquet file if it does not exist
+                tx_blocks_lf.collect(streaming=True).write_parquet(full_path)
+                print(f"File written: {full_path}")
+                print(f'writing parquet file: {full_path}')
 
 
-# final df
-tx_blocks_lf: pl.LazyFrame = (
-    cryo_transform.extend_txs_blocks(txs_lf, blocks_lf)
-    .join(
-        sequencer_labels_lf,
-        left_on="from_address",
-        right_on="sequencer_addresses",
-        how="left",
-    )
-    .drop("timestamp", "block_number_right")
-    .filter(pl.col("sequencer_names").is_in(sequencers_l2["sequencer_names"]))
-)
-
-# make a rollups folder if it doesn't exist
-if not os.path.exists("data/rollups"):
-    os.makedirs("data/rollups")
-    print("Data folder created.")
 else:
-    print("Data folder already exists.")
-
-
-# doesn't workwith .rolling_mean()
-tx_blocks_lf.sink_parquet("data/rollups/rollup_txs_nov22_jan24.parquet")
-
-
-# # ! .rolling_mean() doesn't work in streaming mode, so this is separated out
-# blocks_df = blocks_lf.with_columns(
-#     (pl.col("base_fee_per_gas").rolling_mean(window_size=7200)).alias(
-#         "avg_base_fee_daily"
-#     ),
-#     (pl.col("base_fee_per_gas").rolling_mean(window_size=5)).alias(
-#         "avg_base_fee_minute"
-#     ),  # calculates rolling average over 5 blocks (1 minute)
-# ).collect(streaming=True).write_parquet(
-#     "data/rollups/blocks_nov22_jan24.parquet")
+    print("The synced file lists for the two directories are not of the same length.")
