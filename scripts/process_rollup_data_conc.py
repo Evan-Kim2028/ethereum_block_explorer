@@ -78,7 +78,6 @@ def process_file_pair(txs_file, blocks_file):
         if not os.path.exists(full_path):
             tx_blocks_lf.collect(streaming=True).write_parquet(full_path)
             print(f"File written: {full_path}")
-            print(f'writing parquet file: {full_path}')
 
 
 if len(synced_files[directory_a]) == len(synced_files[directory_b]):
