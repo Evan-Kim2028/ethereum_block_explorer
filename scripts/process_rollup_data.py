@@ -2,6 +2,7 @@
 # | export
 from ethereum_block_explorer.cryo_query import cryoTransform
 
+import os
 import polars as pl
 import jupyter_black
 
@@ -46,14 +47,8 @@ txs_lf = pl.scan_parquet("data/raw/transactions/*.parquet")
 # blocks
 blocks_lf = pl.scan_parquet("data/raw/blocks/*.parquet").select(
     "author", "block_number", "timestamp", "gas_used", "base_fee_per_gas"
-).sort(by="block_number").with_columns(
-    (pl.col("base_fee_per_gas").rolling_mean(window_size=7200)).alias(
-        "avg_base_fee_daily"
-    ),
-    (pl.col("base_fee_per_gas").rolling_mean(window_size=5)).alias(
-        "avg_base_fee_minute"
-    ),  # calculates rolling average over 5 blocks (1 minute)
-)
+).sort(by="block_number")
+
 
 # final df
 tx_blocks_lf: pl.LazyFrame = (
@@ -68,6 +63,25 @@ tx_blocks_lf: pl.LazyFrame = (
     .filter(pl.col("sequencer_names").is_in(sequencers_l2["sequencer_names"]))
 )
 
-tx_blocks_lf.collect(streaming=True).write_parquet(
-    "data/rollup_blobs_nov22_jan24.parquet")
-# tx_blocks_lf.sink_parquet("data/rollup_blobs_nov22_jan24.parquet") # doesn't workwith .rolling_mean()
+# make a rollups folder if it doesn't exist
+if not os.path.exists("data/rollups"):
+    os.makedirs("data/rollups")
+    print("Data folder created.")
+else:
+    print("Data folder already exists.")
+
+
+# doesn't workwith .rolling_mean()
+tx_blocks_lf.sink_parquet("data/rollups/rollup_txs_nov22_jan24.parquet")
+
+
+# ! .rolling_mean() doesn't work in streaming mode, so this is separated out
+blocks_df = blocks_lf.collect(streaming=True).with_columns(
+    (pl.col("base_fee_per_gas").rolling_mean(window_size=7200)).alias(
+        "avg_base_fee_daily"
+    ),
+    (pl.col("base_fee_per_gas").rolling_mean(window_size=5)).alias(
+        "avg_base_fee_minute"
+    ),  # calculates rolling average over 5 blocks (1 minute)
+).write_parquet(
+    "data/rollups/blocks_nov22_jan24.parquet")
