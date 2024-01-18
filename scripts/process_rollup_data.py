@@ -68,4 +68,6 @@ tx_blocks_lf: pl.LazyFrame = (
     .filter(pl.col("sequencer_names").is_in(sequencers_l2["sequencer_names"]))
 )
 
-tx_blocks_lf.sink_parquet("data/rollup_blobs_nov22_jan24.parquet")
+tx_blocks_lf.collect(streaming=True).write_parquet(
+    "data/rollup_blobs_nov22_jan24.parquet")
+# tx_blocks_lf.sink_parquet("data/rollup_blobs_nov22_jan24.parquet") # doesn't workwith .rolling_mean()
