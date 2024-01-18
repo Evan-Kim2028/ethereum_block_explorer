@@ -75,13 +75,13 @@ else:
 tx_blocks_lf.sink_parquet("data/rollups/rollup_txs_nov22_jan24.parquet")
 
 
-# ! .rolling_mean() doesn't work in streaming mode, so this is separated out
-blocks_df = blocks_lf.collect(streaming=True).with_columns(
-    (pl.col("base_fee_per_gas").rolling_mean(window_size=7200)).alias(
-        "avg_base_fee_daily"
-    ),
-    (pl.col("base_fee_per_gas").rolling_mean(window_size=5)).alias(
-        "avg_base_fee_minute"
-    ),  # calculates rolling average over 5 blocks (1 minute)
-).write_parquet(
-    "data/rollups/blocks_nov22_jan24.parquet")
+# # ! .rolling_mean() doesn't work in streaming mode, so this is separated out
+# blocks_df = blocks_lf.with_columns(
+#     (pl.col("base_fee_per_gas").rolling_mean(window_size=7200)).alias(
+#         "avg_base_fee_daily"
+#     ),
+#     (pl.col("base_fee_per_gas").rolling_mean(window_size=5)).alias(
+#         "avg_base_fee_minute"
+#     ),  # calculates rolling average over 5 blocks (1 minute)
+# ).collect(streaming=True).write_parquet(
+#     "data/rollups/blocks_nov22_jan24.parquet")
