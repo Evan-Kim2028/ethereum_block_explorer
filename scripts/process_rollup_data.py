@@ -6,8 +6,7 @@ import os
 import polars as pl
 import jupyter_black
 
-pl.Config.set_fmt_str_lengths(200)
-pl.Config.set_fmt_float("full")
+pl.Config.set_streaming_chunk_size(50000)
 jupyter_black.load()
 
 
