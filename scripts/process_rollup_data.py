@@ -40,12 +40,19 @@ sequencers_l2: dict[str] = {
 
 sequencer_labels_lf: pl.LazyFrame = pl.from_dict(sequencers_l2).lazy()
 
-# cryo txs
+# txs
 txs_lf = pl.scan_parquet("data/raw/transactions/*.parquet")
 
-# cryo blocks
+# blocks
 blocks_lf = pl.scan_parquet("data/raw/blocks/*.parquet").select(
     "author", "block_number", "timestamp", "gas_used", "base_fee_per_gas"
+).sort(by="block_number").with_columns(
+    (pl.col("base_fee_per_gas").rolling_mean(window_size=7200)).alias(
+        "avg_base_fee_daily"
+    ),
+    (pl.col("base_fee_per_gas").rolling_mean(window_size=5)).alias(
+        "avg_base_fee_minute"
+    ),  # calculates rolling average over 5 blocks (1 minute)
 )
 
 # final df
@@ -61,19 +68,4 @@ tx_blocks_lf: pl.LazyFrame = (
     .filter(pl.col("sequencer_names").is_in(sequencers_l2["sequencer_names"]))
 )
 
-
-# BLOCK GAS
-mean_block_vals = blocks_lf.sort(by="block_datetime").with_columns(
-    (pl.col("base_fee_per_gas").rolling_mean(window_size=7200)).alias(
-        "avg_base_fee_daily"
-    ),
-    (pl.col("base_fee_per_gas").rolling_mean(window_size=5)).alias(
-        "avg_base_fee_minute"
-    ),  # calculates rolling average over 5 blocks (1 minute)
-)
-
-# using the above results, we append the blocks_df gas rolling averages to the sequencer tx dataset
-tx_blocks_gas_vol_df = mean_block_vals.join(
-    tx_blocks_lf, on="block_number", how="left")
-
-tx_blocks_gas_vol_df.sink_parquet("data/rollup_blobs_nov22_jan24.parquet")
+tx_blocks_lf.sink_parquet("data/rollup_blobs_nov22_jan24.parquet")
