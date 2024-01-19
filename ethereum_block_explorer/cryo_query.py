@@ -156,6 +156,15 @@ class cryoTransform:
                     (pl.col("gas_price") / pl.col("base_fee_per_gas")).alias(
                         "block_gas_premium"
                     ),
+                    (pl.col("base_fee_per_gas").rolling_mean(window_size=7200)).alias(
+                        "avg_base_fee_daily"
+                    ),
+                    (pl.col("base_fee_per_gas").rolling_mean(window_size=300)).alias(
+                        "avg_base_fee_hourly"
+                    ),
+                    (pl.col("base_fee_per_gas").rolling_mean(window_size=5)).alias(
+                        "avg_base_fee_minute"
+                    ),
                 ]
             )
             .with_columns(
