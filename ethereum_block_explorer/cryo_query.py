@@ -188,6 +188,15 @@ class cryoTransform:
                 ),
                 (pl.col("max_fee_per_gas") / 10**9).alias("max_fee_per_gas_gwei"),
                 (pl.col("base_fee_per_gas") / 10**9).alias("base_fee_per_gas_gwei"),
+                (pl.col("avg_base_fee_daily") / 10**9).alias(
+                    "avg_base_fee_daily_gwei"
+                ),
+                (pl.col("avg_base_fee_hourly") / 10**9).alias(
+                    "avg_base_fee_hourly_gwei"
+                ),
+                (pl.col("avg_base_fee_minute") / 10**9).alias(
+                    "avg_base_fee_minute_gwei"
+                ),
                 # convert bytes to kilobytes
                 (pl.col("block_encoded_bytes") / 10**3).alias("block_encoded_kbytes"),
                 (pl.col("block_calldata_bytes") / 10**3).alias(
