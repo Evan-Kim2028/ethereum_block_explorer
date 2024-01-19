@@ -11,16 +11,6 @@ pl.Config.set_fmt_float("full")
 jupyter_black.load()
 
 
-ct = cryoTransform()
-
-
-directory_a: str = "data/raw/transactions"
-directory_b: str = "data/raw/blocks"
-
-synced_files: dict[str] = ct.sync_filenames(
-    directory_a=directory_a, directory_b=directory_b)
-
-
 # Sequencer Tags
 # https://dune.com/queries/3302607
 sequencers_l2: dict[str] = {
@@ -49,6 +39,17 @@ sequencers_l2: dict[str] = {
 sequencer_labels_lf: pl.LazyFrame = pl.from_dict(sequencers_l2).lazy()
 
 
+# Concurrently process rollup data with idempotent data check.
+ct = cryoTransform()
+
+directory_a: str = "data/raw/transactions"
+directory_b: str = "data/raw/blocks"
+new_directory = "data/rollups"
+
+synced_files: dict[str] = ct.sync_filenames(
+    directory_a=directory_a, directory_b=directory_b)
+
+
 def process_file_pair(txs_file, blocks_file):
     txs_lf = pl.scan_parquet(txs_file)
     blocks_lf = pl.scan_parquet(blocks_file)
@@ -65,10 +66,10 @@ def process_file_pair(txs_file, blocks_file):
         .filter(pl.col("sequencer_names").is_in(sequencers_l2["sequencer_names"]))
     )
 
-    new_directory = "data/rollups"
     if not os.path.exists(new_directory):
         os.makedirs(new_directory)
 
+    # skip file if it already exists
     block_range_match = re.search(r"__(\d+_to_\d+)", txs_file)
     if block_range_match:
         block_range = block_range_match.group(1)
