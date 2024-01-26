@@ -41,6 +41,7 @@ class cryoQuery:
         n_error_threshold: int = 1,
         retry_threshold: int = 5,
         block_range: list[str] = ["latest"],
+        name: str = None,
     ):
         """
         Fetches block and transaction data. Attempts retries up to 'retry_threshold'. If errors exceed 'n_error_threshold'.
@@ -64,7 +65,7 @@ class cryoQuery:
                     hex=True,
                     rpc=self.rpc,
                     no_verbose=False,  # this doesn't seem to have any effect
-                    output_dir="data/raw",
+                    output_dir=f"data/raw_{name}",
                     subdirs=["datatype"],
                     include_columns=["n_rlp_bytes"],
                     exclude_columns=["input", "value"],
