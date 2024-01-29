@@ -51,9 +51,21 @@ synced_files: dict[str] = ct.sync_filenames(
 
 
 def process_file_pair(txs_file, blocks_file):
+    """
+    Processes a pair of transaction and block files.
+
+    It joins transaction and block data, labels transactions with sequencer names,
+    and saves the processed data to a new file in the rollups directory.
+
+    Args:
+        txs_file (str): Path to the transactions file.
+        blocks_file (str): Path to the blocks file.
+    """
+    # Load transaction and block data as LazyFrames for efficient processing
     txs_lf = pl.scan_parquet(txs_file)
     blocks_lf = pl.scan_parquet(blocks_file)
 
+    # Join transaction and block data, label them, and filter by sequencer names
     tx_blocks_lf = (
         ct.extend_txs_blocks(txs_lf, blocks_lf)
         .join(
@@ -66,10 +78,11 @@ def process_file_pair(txs_file, blocks_file):
         .filter(pl.col("sequencer_names").is_in(sequencers_l2["sequencer_names"]))
     )
 
+    # Create the rollups directory if it doesn't exist
     if not os.path.exists(new_directory):
         os.makedirs(new_directory)
 
-    # skip file if it already exists
+    # Skip file processing if it already exists in the new directory
     block_range_match = re.search(r"__(\d+_to_\d+)", txs_file)
     if block_range_match:
         block_range = block_range_match.group(1)
@@ -81,13 +94,16 @@ def process_file_pair(txs_file, blocks_file):
             print(f"File written: {full_path}")
 
 
+# Check if the synced files from both directories are equal in number
 if len(synced_files[directory_a]) == len(synced_files[directory_b]):
+    # Use ThreadPoolExecutor for concurrent processing
     with ThreadPoolExecutor() as executor:
         for i in range(len(synced_files[directory_a])):
             txs_file = directory_a + "/" + synced_files[directory_a][i]
             blocks_file = directory_b + "/" + synced_files[directory_b][i]
 
-            # Submit each pair of files to the executor
+            # Process each pair of transaction and block files concurrently
             executor.submit(process_file_pair, txs_file, blocks_file)
 else:
+    # Output a message if the number of files in both directories does not match
     print("The synced file lists for the two directories are not of the same length.")
