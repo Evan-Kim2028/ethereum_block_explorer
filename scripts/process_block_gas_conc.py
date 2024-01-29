@@ -35,7 +35,7 @@ def process_blocks(blocks_file):
     if not os.path.exists(new_directory):
         os.makedirs(new_directory)
 
-    new_filename = f"/{blocks_file}.parquet"
+    new_filename = f"{blocks_file}.parquet"
 
     full_path = os.path.join(new_directory, new_filename)
     if not os.path.exists(full_path):
