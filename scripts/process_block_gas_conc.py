@@ -35,21 +35,17 @@ def process_blocks(blocks_file):
     if not os.path.exists(new_directory):
         os.makedirs(new_directory)
 
-    # Skip file processing if it already exists in the new directory
-    block_range_match = re.search(r"__(\d+_to_\d+)", blocks_file)
-    if block_range_match:
-        block_range = block_range_match.group(1)
-        new_filename = f"{block_range}.parquet"
+    new_filename = f"/{blocks_file}.parquet"
 
-        full_path = os.path.join(new_directory, new_filename)
-        if not os.path.exists(full_path):
-            blocks_lf.collect(streaming=True).write_parquet(full_path)
-            print(f"File written: {full_path}")
+    full_path = os.path.join(new_directory, new_filename)
+    if not os.path.exists(full_path):
+        blocks_lf.collect(streaming=True).write_parquet(full_path)
+        print(f"File written: {full_path}")
 
 
 # Use ThreadPoolExecutor for concurrent processing of block files
 with ThreadPoolExecutor() as executor:
-    for blocks_file in synced_files:
+    for blocks in synced_files:
         # Process each block file concurrently
-        full_blocks_file = os.path.join(directory_b, blocks_file)
+        full_blocks_file = os.path.join(directory_b, blocks)
         executor.submit(process_blocks, full_blocks_file)
